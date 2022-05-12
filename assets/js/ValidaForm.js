@@ -23,7 +23,7 @@ const validaCPF = (input) =>{
     const cpfFormatado = input.value.replice(/\D/g,'')
     let mensagem = '';
 
-    if(!checaCPFRepetido(cpfFormatado)){
+    if(!checaCPFRepetido(cpfFormatado) || checaEstruturaCPF(cpfFormatado)){
         mensagem ='O cpf digitado não e valido';
     }
 
@@ -53,6 +53,37 @@ const checaCPFRepetido = (cpf) =>{
 
     return cpfValido
 }
+//fazendo conta pra ver se um cpf e valido
+const checaEstruturaCPF = (cpf)=>{
+    const multiplicador = 10;
+    return checaDigitoVerificador(cpf, multiplicador)
+}
+
+const checaDigitoVerificador = (cpf, multiplicador) =>{
+    if(multiplicador >= 12){
+        return true
+    }
+
+    let multiplicadorInicial = multiplicador;
+    let soma = 0;
+    const cpfSemDigitos = cpf.substr(0, multiplicador - 1).split('');
+    const digitoVerificador = cpf.charAt(multiplicador - 1);
+
+    for(let contador = 0; multiplicadorInicial > 1; multiplicadorInicial --){
+        soma = soma + cpfSemDigitos[contador] * multiplicadorInicial;
+        contador++
+    }
+
+    if(digitoVerificador == confirmaDigito(soma)){
+        return checaDigitoVerificador(cpf, multiplicador +1 );
+    }
+    return false
+}
+
+const confirmaDigito = (soma) =>{
+    return 11 - (soma % 11)
+}
+
 const maiorQue18 = (data) =>{
     const dataAtual = new Date();
     const DataMais18 = new Date(data.getUTCFullYear()+18, data.getUTCMonth(), data.getUTCDate());
@@ -110,7 +141,25 @@ const mensagemDeErro = {
     cpf:{
         valueMissing: 'O campo de CPF não pode estar vazio',
         customError: 'O CPF digitado não é válido'
+    },
+    cep:{
+        valueMissing: 'o campo de cep nao pode esta fazio',
+        patterMismatch: 'o cep digitado nao  e valido',
+        customError:"o nao foi possivel buscar o cep"
+    },
+
+    logradouro:{
+        valueMissing:' o campo de logradouro nao pode esta vazio'
+    },
+
+    cidade:{
+        valueMissing:' o campo de cidade nao pode esta vazio'
+    },
+
+    estado:{
+        valueMissing:' o campo de estado nao pode esta vazio'
     }
+
 }
 //pegando os tipo de erro com um laço de repetição
 const mostraMensagemDeErro = (tipoDeInput, input) =>{
@@ -125,5 +174,50 @@ const mostraMensagemDeErro = (tipoDeInput, input) =>{
 
 const validadores =  {
     dataNascimento: input => validaDataNascimento(input),
-    cpf:input =>validaCPF(input)
+    cpf:input =>validaCPF(input),
+    cep:input => recuperarCep(input)
+}
+
+
+const recuperarCep = (input) =>{
+    const cep = input.value.replice(/\D/g, '')
+
+    const url =`https://viacep.com.br/ws/${cep}/json/`;
+    const options = {
+        method: 'GET',
+        mode: 'cors',
+        headers:{
+            'content-type': 'application/json;charset=utf-8'
+        }
+    }
+
+    if(!input.validity.patterMismatch && !input.validity.valueMissing){
+        fetch(url, options).then(
+            response => response.json()
+        ).then (
+            data =>{
+                if(data.erro){
+                    input.setCustomValidity("o nao foi possivel buscar o cep");
+                    return
+                }
+                input.setCustomValidity('');
+                preencheCamposComCEP(data)
+                return
+            }
+        )
+    }
+}
+
+
+const preencheCamposComCEP = (data) =>{
+    const logradouro = document.querySelector('[data-tipo="logradouro"]')
+    const cidade = document.querySelector('[data-tipo="cidade"]')
+    const estado = document.querySelector('[data-tipo="estado"]')
+
+
+
+    logradouro.value = data.logradouro
+    cidade.value = data.localidade
+    estado.value = data.uf
+
 }
