@@ -158,8 +158,11 @@ const mensagemDeErro = {
 
     estado:{
         valueMissing:' o campo de estado nao pode esta vazio'
-    }
+    },
 
+    preco:{
+        valueMissing: 'o campo de preço nao pode esta fazio'
+    }
 }
 //pegando os tipo de erro com um laço de repetição
 const mostraMensagemDeErro = (tipoDeInput, input) =>{
